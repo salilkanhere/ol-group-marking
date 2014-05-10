@@ -1,5 +1,8 @@
 #!/usr/bin/env python2
 
+# based on code written by Alex Hixon
+# https://github.com/ahixon/openlearning-offline
+
 import urllib
 import urllib2
 import json
@@ -10,6 +13,8 @@ import cookielib
 import csv
 import BeautifulSoup
 import datetime
+import cgi
+import random
 from time import gmtime, strftime
 
 import olsettings
@@ -21,6 +26,8 @@ def read_json (f):
 	return json.loads (f.read ())
 
 def main ():
+	random.seed()
+
 	global SESSIONID
 
 	if len(sys.argv) != 2:
@@ -39,14 +46,20 @@ def main ():
 		print "Report directory does not exist"
 		return
 
-	for report in os.listdir (reportDirectory):
+	for reportFilename in os.listdir (reportDirectory):
 
-		print "Uploading %s..." % (report)
+		print "Uploading %s..." % (reportFilename)
 
-		reportSource = open("%s/%s" % (reportDirectory, report))
+		reportFilenameWithoutExt = os.path.splitext(reportFilename)[0]
 
-		# todo fix this
-		reportRelativeUrl = "courses/99luftballons/Cohorts/ClassOf2014/Groups/Tutors/MagicalMarkingPages/Test"
+		reportSource = open("%s/%s" % (reportDirectory, reportFilename)).read()
+
+		reportSource = reportSource.replace("\n", "")
+
+		reportRelativeUrl = "courses/99luftballons/Cohorts/ClassOf2014/Groups/Tutors/MagicalMarkingPages/%s" % (reportFilenameWithoutExt)
+
+		# testing
+		# reportRelativeUrl = "courses/99luftballons/Cohorts/ClassOf2014/Groups/Tutors/MagicalMarkingPages/%s" % ("Test")
 
 		content_url = 'https://www.openlearning.com/%s' % reportRelativeUrl
 		commentpage = opener.open (content_url).read()
@@ -54,7 +67,11 @@ def main ():
 		commentcontainer = soup.find (id='comments-container-main')
 		commentdoc = commentcontainer['data-document']
 
-		comment_content = "This page was automatically updated at %s" % (strftime("%Y-%m-%d %H:%M:%S", gmtime()))
+		randomNumber = random.randint(0,20)
+		randomNumber2 = random.randint(0,25)
+		randomLetter = chr(65 + randomNumber2)
+
+		comment_content = "This page was automatically updated at %s. Brought to you by Alex, Rupert, the number %d and the letter '%s'." % (strftime("%Y-%m-%d %H:%M:%S"), randomNumber, randomLetter)
 		comment_content = comment_content.replace ("\n", "<br />")
 
 		export_data = {
@@ -63,16 +80,18 @@ def main ():
 			'content': comment_content
 		}
 
-		# do some csrf bullshit
+		# do some csrf bs
 		csrf = None
 		for cookie in cj:
-			print cookie
 			if 'csrf' in cookie.name:
 				csrf = cookie.value
+				break
 
-		opener.addheaders = [('Referer', content_url),
+		opener.addheaders = [
+			('Referer', content_url),
 			('X-CSRFToken', csrf),
-			('X-Requested-With', 'XMLHttpRequest')]
+			('X-Requested-With', 'XMLHttpRequest')
+		]
 
 		http_data =  urllib.urlencode (export_data.items())
 		resp = opener.open ('https://www.openlearning.com/commenting/add/', data=http_data).read()
@@ -81,21 +100,29 @@ def main ():
 			print "Failed to post comment, skipping."
 			continue
 
-		#print "\t\tMarking task as complete..."
-		#mark_data = {
-		#	'activityId': (activityId),
-		#	'userId': stu[username]['userId'],
-		#	'completed': 'true',
-		#	'cohortId': (cohortId),
-		#	'groupPath': ''
-		#}
+		# do some csrf bs (again?)
+		csrf = None
+		for cookie in cj:
+			if 'csrf' in cookie.name:
+				csrf = cookie.value
+				break
 
-		#grade_page = "https://www.openlearning.com/api/mark/?action=setMarkComplete"
-		#print grade_page
-		#http_data =  urllib.urlencode (mark_data.items())
-		#opener.open (grade_page, data=http_data)
+		componentData = '{"HTMLData":{"pageHTML":"%s"}}' % (
+			reportSource
+		)
 
-	print "Finished uploading"
+		editData = {
+			'method': 'saveComponents',
+   			'componentData': componentData
+		}
+
+		http_data = urllib.urlencode (editData.items())
+
+		editPageUrl = content_url + "?action=edit&editor=html"
+
+		resp = opener.open (editPageUrl, data=http_data)
+
+	print "Finished updating stats - hooray!"
 		
 if __name__ == "__main__":
 	main ()
