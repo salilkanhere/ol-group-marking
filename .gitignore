@@ -1,2 +1,5 @@
 *.csv
 reports/
+
+# copy olsettings.py.template to olsettings.py and set your session id
+olsettings.py
