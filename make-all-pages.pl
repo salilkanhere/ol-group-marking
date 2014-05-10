@@ -28,7 +28,7 @@ opendir(my $groupsFh, $groupsDirectory) or die $!;
 while (my $filename = readdir($groupsFh)) {
     next if ($filename =~ m/^\./);
 
-    printf ("Generating report for group: '%s'\n", $filename);	
+    printf ("Generating report for group: '%s' ... ", $filename);	
 
     my $reportFilename = sprintf("%s/%s.html", $reportOutputDirectory, $filename);
 
@@ -36,10 +36,11 @@ while (my $filename = readdir($groupsFh)) {
 
     system($execCommand);
 
-    if ($? == 0) {
-        printf("OK\n");
+    if ($? != 0) {
+        printf("\n");
+	die '$execCommand';
     } else {
-        printf("ERROR\n");
+        printf("OK\n");
     }
 }
 
