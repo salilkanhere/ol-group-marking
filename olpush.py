@@ -1,3 +1,5 @@
+#!/usr/bin/env python2
+
 import urllib
 import urllib2
 import json
@@ -8,6 +10,7 @@ import cookielib
 import csv
 import BeautifulSoup
 import datetime
+from time import gmtime, strftime
 
 import olsettings
 
@@ -21,7 +24,7 @@ def main ():
 	global SESSIONID
 
 	if len(sys.argv) != 2:
-		print "Usage: %s <report-directory>" % sys.argv[0]
+		print "Usage: %s <report-directory>" % (sys.argv[0])
 		return
 
 	SESSIONID = olsettings.SESSIONID
@@ -40,7 +43,7 @@ def main ():
 
 		print "Uploading %s..." % (report)
 
-		reportSource = open(%s/%s' % (reportDirectory, report))
+		reportSource = open("%s/%s" % (reportDirectory, report))
 
 		# todo fix this
 		reportRelativeUrl = "courses/99luftballons/Cohorts/ClassOf2014/Groups/Tutors/MagicalMarkingPages/Test"
@@ -51,7 +54,7 @@ def main ():
 		commentcontainer = soup.find (id='comments-container-main')
 		commentdoc = commentcontainer['data-document']
 
-		comment_content = "Test comment\n New \n Line \n Line"
+		comment_content = "This page was automatically updated at %s" % (strftime("%Y-%m-%d %H:%M:%S", gmtime()))
 		comment_content = comment_content.replace ("\n", "<br />")
 
 		export_data = {
